@@ -37,7 +37,9 @@ data Instr = Lab Label
            | Const Dest Literal
            | Binary Dest BinaryOperation Arg Arg
            | Unary Dest UnaryOperation Arg
-           | Control ControlOperation
+           | Jmp Label
+           | Br Arg Label Label
+           | Ret (Maybe Arg)
            | Call (Maybe Dest) Ident [Arg]
            | Store Arg Arg
            | Free Arg
@@ -80,13 +82,23 @@ data UnaryOperation = Not
                     | Alloc
                     deriving (Show)
 
-data ControlOperation = Jmp Label
-                      | Br Arg Label Label
-                      | Ret (Maybe Arg)
-                      deriving (Show)
-
+primitiveOf :: TyName -> Ty
 primitiveOf = Ty Primitive
+
+pointerOf :: TyName -> Ty
 pointerOf = Ty Pointer
+
+mkOptionalDest :: Maybe Ty -> Maybe Ident -> Maybe Dest
+mkOptionalDest _ Nothing              = Nothing
+mkOptionalDest Nothing _              = Nothing
+mkOptionalDest (Just ty) (Just ident) = Just $ Dest ty ident
+
+mkRet :: Maybe [Maybe Arg] -> Instr
+mkRet Nothing    = Ret Nothing
+mkRet (Just [])  = Ret Nothing
+mkRet (Just [a]) = Ret a
+
+-- JSON instances
 
 instance FromJSON Program where
   parseJSON = withObject "program" $ \o ->
@@ -96,7 +108,7 @@ instance FromJSON Fn where
   parseJSON = withObject "function" $ \o ->
     Fn <$> o .: "name"
        <*> o .: "args"
-       <*> o .: "type"
+       <*> o .:? "type"
        <*> o .: "instrs"
 
 instance FromJSON Dest where
@@ -124,20 +136,37 @@ instance FromJSON Instr where
                                                 Lab <$> o .: "label"
                                               , parseOp o
                                               ]
+parseOp :: Object -> Parser Instr
 parseOp o = do
   op <- o .: "op" :: Parser Text
   case op of
-    "const" -> Const <$> (Dest <$> o .: "type" <*> o .: "dest") <*> o .: "value"
-    "print" -> Print <$> o .: "args"
-    "nop" -> return Nop
-    "commit" -> return Commit
-    "speculate" -> return Speculate
-    "free" -> do
-      args <- o .: "args" :: Parser [Text]
-      return $ Free $ Prelude.head args
-    "store" -> do
-      args <- o .: "args" :: Parser [Text]
-      return $ Store (Prelude.head args) (args !! 1)
+    "const" ->
+      Const <$> (Dest <$> o .: "type" <*> o .: "dest") <*> o .: "value"
+    "print" ->
+      Print <$> o .: "args"
+    "nop" ->
+      return Nop
+    "commit" ->
+      return Commit
+    "speculate" ->
+      return Speculate
+    "free" ->
+      Free . Prelude.head <$> (o .: "args")
+    "store" ->
+      Store . Prelude.head <$> (o .: "args") <*> ((!! 1) <$> (o .: "args"))
+    "guard" ->
+      Guard . Prelude.head <$> (o .: "args") <*> (Prelude.head <$> (o .: "labels"))
+    "phi" ->
+      Phi <$> (Dest <$> o .: "type" <*> o .: "dest") <*> o .: "labels" <*> o .: "args"
+    "call" ->
+      Call <$> (mkOptionalDest <$> o .: "type" <*> o .: "dest") <*> (Prelude.head <$> o .: "funcs") <*> o .: "args"
+    "jmp" ->
+      Jmp <$> o .: "labels"
+    "br" ->
+      Br . Prelude.head <$> (o .: "args") <*> (Prelude.head <$> (o .: "labels")) <*> ((!! 1) <$> o .: "labels")
+    "ret" -> mkRet <$> o .:? "args"
+
+
 
 instance FromJSON Literal where
   parseJSON (Data.Aeson.Types.Bool b) =
@@ -146,3 +175,34 @@ instance FromJSON Literal where
   parseJSON (Data.Aeson.Types.Number s) =
     return $ Bril.Number s
 
+instance FromJSON BinaryOperation where
+  parseJSON (String s) =
+    return $ case s of
+     "add" -> Add
+     "fadd" -> FAdd
+     "ptradd" -> PtrAdd
+     "mul" -> Mul
+     "fmul" -> FMul
+     "sub" -> Sub
+     "fsub" -> FSub
+     "div" -> Div
+     "fdiv" -> FDiv
+     "eq" -> Eq
+     "feq" -> FEq
+     "lt" -> Lt
+     "flt" -> FLt
+     "gt" -> Gt
+     "fgt" -> FGt
+     "le" -> FLe
+     "ge" -> Ge
+     "fge" -> FGe
+     "and" -> And
+     "or" -> Or
+
+instance FromJSON UnaryOperation where
+  parseJSON (String s) =
+    return $ case s of
+      "not" -> Not
+      "id" -> Id
+      "load" -> Load
+      "alloc" -> Alloc
