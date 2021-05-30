@@ -3,7 +3,10 @@ module Bril where
 
 import Data.Text
 import Data.Aeson
+import Data.Aeson.Types
 import Data.HashMap.Strict as HM
+import Data.Foldable (asum)
+import Data.Scientific
 
 -- Types
 data TyKind = Primitive | Pointer deriving (Show)
@@ -17,9 +20,8 @@ type Arg = Text
 type Label = Text
 
 -- Literals
-data Number = Floating Double | Integral Int
 data Literal = Boolean Bool
-             | Number
+             | Number Scientific
              deriving (Show)
 
 -- Typed Identifier
@@ -117,6 +119,30 @@ instance FromJSON Ty where
                Just (String "float") -> primitiveOf Float
                Just (String "bool") -> primitiveOf Bril.Bool
 
+instance FromJSON Instr where
+  parseJSON = withObject "instr" $ \o -> asum [
+                                                Lab <$> o .: "label"
+                                              , parseOp o
+                                              ]
+parseOp o = do
+  op <- o .: "op" :: Parser Text
+  case op of
+    "const" -> Const <$> (Dest <$> o .: "type" <*> o .: "dest") <*> o .: "value"
+    "print" -> Print <$> o .: "args"
+    "nop" -> return Nop
+    "commit" -> return Commit
+    "speculate" -> return Speculate
+    "free" -> do
+      args <- o .: "args" :: Parser [Text]
+      return $ Free $ Prelude.head args
+    "store" -> do
+      args <- o .: "args" :: Parser [Text]
+      return $ Store (Prelude.head args) (args !! 1)
 
+instance FromJSON Literal where
+  parseJSON (Data.Aeson.Types.Bool b) =
+    return $ Boolean b
 
+  parseJSON (Data.Aeson.Types.Number s) =
+    return $ Bril.Number s
 
