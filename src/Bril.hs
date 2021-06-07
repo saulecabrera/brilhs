@@ -28,9 +28,9 @@ data Literal = Boolean Bool
 data Dest = Dest Ty Ident deriving (Show)
 
 -- Top level program
-newtype Program = Program [Fn]
+newtype Program = Program [Fn] deriving (Show)
 
-data Fn = Fn Ident [Dest] OptionalType [Instr] deriving (Show)
+data Fn = Fn Ident (Maybe [Dest]) OptionalType [Instr] deriving (Show)
 
 -- Instruction
 data Instr = Lab Label
@@ -107,7 +107,9 @@ instance FromJSON Program where
 instance FromJSON Fn where
   parseJSON = withObject "function" $ \o ->
     Fn <$> o .: "name"
-       <*> o .: "args"
+      -- Is there a way to default to empty list here?
+      -- That will be more representative
+       <*> o .:? "args"
        <*> o .:? "type"
        <*> o .: "instrs"
 
@@ -159,12 +161,17 @@ parseOp o = do
     "phi" ->
       Phi <$> (Dest <$> o .: "type" <*> o .: "dest") <*> o .: "labels" <*> o .: "args"
     "call" ->
-      Call <$> (mkOptionalDest <$> o .: "type" <*> o .: "dest") <*> (Prelude.head <$> o .: "funcs") <*> o .: "args"
+      Call <$> (mkOptionalDest <$> o .:? "type" <*> o .:? "dest") <*> (Prelude.head <$> o .: "funcs") <*> o .: "args"
     "jmp" ->
       Jmp <$> o .: "labels"
     "br" ->
       Br . Prelude.head <$> (o .: "args") <*> (Prelude.head <$> (o .: "labels")) <*> ((!! 1) <$> o .: "labels")
     "ret" -> mkRet <$> o .:? "args"
+    _ -> asum [
+                Binary <$> (Dest <$> o .: "type" <*> o .: "dest") <*> o .: "op" <*> (Prelude.head <$> (o .: "args")) <*> ((!! 1) <$> o .: "args")
+              , Unary <$> (Dest <$> o .: "type" <*> o .: "dest") <*> o .: "op" <*> (Prelude.head <$> (o .: "args"))
+              ]
+
 
 
 
