@@ -7,11 +7,11 @@ import Data.Aeson.Types
 import Data.HashMap.Strict as HM
 import Data.Foldable (asum)
 import Data.Scientific
+import Control.Applicative ((<|>))
+import Control.Monad (mzero)
 
 -- Types
-data TyKind = Primitive | Pointer deriving (Show)
-data TyName = Int | Bool | Float deriving (Show)
-data Ty = Ty TyKind TyName deriving (Show)
+data Ty = Int | Bool | Float | Pointer Ty deriving (Show)
 type OptionalType = Maybe Ty
 
 -- Identifiers
@@ -30,7 +30,7 @@ data Dest = Dest Ty Ident deriving (Show)
 -- Top level program
 newtype Program = Program [Fn] deriving (Show)
 
-data Fn = Fn Ident (Maybe [Dest]) OptionalType [Instr] deriving (Show)
+data Fn = Fn Ident [Dest] OptionalType [Instr] deriving (Show)
 
 -- Instruction
 data Instr = Lab Label
@@ -82,11 +82,8 @@ data UnaryOperation = Not
                     | Alloc
                     deriving (Show)
 
-primitiveOf :: TyName -> Ty
-primitiveOf = Ty Primitive
-
-pointerOf :: TyName -> Ty
-pointerOf = Ty Pointer
+-- pointerOf :: Ty -> Ty
+pointerOf = Pointer
 
 mkOptionalDest :: Maybe Ty -> Maybe Ident -> Maybe Dest
 mkOptionalDest _ Nothing              = Nothing
@@ -107,9 +104,7 @@ instance FromJSON Program where
 instance FromJSON Fn where
   parseJSON = withObject "function" $ \o ->
     Fn <$> o .: "name"
-      -- Is there a way to default to empty list here?
-      -- That will be more representative
-       <*> o .:? "args"
+       <*> (o .:? "args" >>= maybe (pure []) pure)
        <*> o .:? "type"
        <*> o .: "instrs"
 
@@ -119,19 +114,22 @@ instance FromJSON Dest where
 
 instance FromJSON Ty where
   parseJSON (String "int") =
-    return $ primitiveOf Int
+    return Int
 
   parseJSON (String "float") =
-    return $ primitiveOf Float
+    return Float
 
   parseJSON (String "bool") =
-    return $ primitiveOf Bril.Bool
+    return Bril.Bool
 
   parseJSON (Object o) =
-    return $ case HM.lookup "ptr" o of
-               Just (String "int") -> primitiveOf Int
-               Just (String "float") -> primitiveOf Float
-               Just (String "bool") -> primitiveOf Bril.Bool
+    case HM.lookup "ptr" o of
+       Just (String "int") -> return $ pointerOf Int
+       Just (String "float") -> return $ pointerOf Float
+       Just (String "bool") -> return $ pointerOf Bril.Bool
+       Just o -> do
+         ty <- parseJSON o
+         return $ pointerOf ty
 
 instance FromJSON Instr where
   parseJSON = withObject "instr" $ \o -> asum [
@@ -167,12 +165,10 @@ parseOp o = do
     "br" ->
       Br . Prelude.head <$> (o .: "args") <*> (Prelude.head <$> (o .: "labels")) <*> ((!! 1) <$> o .: "labels")
     "ret" -> mkRet <$> o .:? "args"
-    _ -> asum [
-                Binary <$> (Dest <$> o .: "type" <*> o .: "dest") <*> o .: "op" <*> (Prelude.head <$> (o .: "args")) <*> ((!! 1) <$> o .: "args")
-              , Unary <$> (Dest <$> o .: "type" <*> o .: "dest") <*> o .: "op" <*> (Prelude.head <$> (o .: "args"))
-              ]
-
-
+    _ ->
+      Binary <$> (Dest <$> o .: "type" <*> o .: "dest") <*> o .: "op" <*> (Prelude.head <$> (o .: "args")) <*> ((!! 1) <$> o .: "args")
+      <|>
+      Unary <$> (Dest <$> o .: "type" <*> o .: "dest") <*> o .: "op" <*> (Prelude.head <$> (o .: "args"))
 
 
 instance FromJSON Literal where
@@ -184,32 +180,34 @@ instance FromJSON Literal where
 
 instance FromJSON BinaryOperation where
   parseJSON (String s) =
-    return $ case s of
-     "add" -> Add
-     "fadd" -> FAdd
-     "ptradd" -> PtrAdd
-     "mul" -> Mul
-     "fmul" -> FMul
-     "sub" -> Sub
-     "fsub" -> FSub
-     "div" -> Div
-     "fdiv" -> FDiv
-     "eq" -> Eq
-     "feq" -> FEq
-     "lt" -> Lt
-     "flt" -> FLt
-     "gt" -> Gt
-     "fgt" -> FGt
-     "le" -> FLe
-     "ge" -> Ge
-     "fge" -> FGe
-     "and" -> And
-     "or" -> Or
+    case s of
+     "add" -> return Add
+     "fadd" -> return FAdd
+     "ptradd" -> return  PtrAdd
+     "mul" -> return Mul
+     "fmul" -> return FMul
+     "sub" -> return  Sub
+     "fsub" -> return FSub
+     "div" -> return Div
+     "fdiv" -> return FDiv
+     "eq" -> return Eq
+     "feq" -> return FEq
+     "lt" -> return Lt
+     "flt" -> return FLt
+     "gt" -> return Gt
+     "fgt" -> return FGt
+     "le" -> return FLe
+     "ge" -> return Ge
+     "fge" -> return FGe
+     "and" -> return And
+     "or" -> return Or
+     _ -> mzero
 
 instance FromJSON UnaryOperation where
   parseJSON (String s) =
-    return $ case s of
-      "not" -> Not
-      "id" -> Id
-      "load" -> Load
-      "alloc" -> Alloc
+    case s of
+      "not" -> return Not
+      "id" -> return Id
+      "load" -> return Load
+      "alloc" -> return Alloc
+      _ -> mzero
