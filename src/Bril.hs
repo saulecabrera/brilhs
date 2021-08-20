@@ -1,11 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Bril where
+module Bril
+  ( Program, formBlocks ) where
 
 import Data.Text
 import Data.Aeson
 import Data.Aeson.Types
 import Data.HashMap.Strict as HM
-import Data.Foldable (asum)
+import Data.Foldable as F
 import Data.Scientific
 import Control.Applicative ((<|>))
 import Control.Monad (mzero)
@@ -132,7 +133,7 @@ instance FromJSON Ty where
          return $ pointerOf ty
 
 instance FromJSON Instr where
-  parseJSON = withObject "instr" $ \o -> asum [
+  parseJSON = withObject "instr" $ \o -> F.asum [
                                                 Lab <$> o .: "label"
                                               , parseOp o
                                               ]
@@ -211,3 +212,22 @@ instance FromJSON UnaryOperation where
       "load" -> return Load
       "alloc" -> return Alloc
       _ -> mzero
+
+
+formBlocks :: Program -> [[Instr]]
+formBlocks (Program []) = []
+formBlocks (Program fns) =
+  case Prelude.head fns of
+    Fn _ _ _ ins ->  F.foldr formBlock [] ins
+
+
+formBlock :: Instr -> [[Instr]] -> [[Instr]]
+formBlock instr (current:blocks) =
+  case instr of
+    Lab _ -> [instr]:blocks
+    Jmp _ -> []:(current ++ [instr]):blocks
+    Ret _ -> []:(current ++ [instr]):blocks
+    Br {} -> []:(current ++ [instr]):blocks
+    _ -> (current ++ [instr]):blocks
+
+formBlock instr [] = [[instr]]
