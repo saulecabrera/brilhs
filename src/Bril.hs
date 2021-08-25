@@ -83,7 +83,6 @@ data UnaryOperation = Not
                     | Alloc
                     deriving (Show)
 
--- pointerOf :: Ty -> Ty
 pointerOf = Pointer
 
 mkOptionalDest :: Maybe Ty -> Maybe Ident -> Maybe Dest
@@ -162,7 +161,7 @@ parseOp o = do
     "call" ->
       Call <$> (mkOptionalDest <$> o .:? "type" <*> o .:? "dest") <*> (Prelude.head <$> o .: "funcs") <*> o .: "args"
     "jmp" ->
-      Jmp <$> o .: "labels"
+      Jmp . Prelude.head <$> o .: "labels"
     "br" ->
       Br . Prelude.head <$> (o .: "args") <*> (Prelude.head <$> (o .: "labels")) <*> ((!! 1) <$> o .: "labels")
     "ret" -> mkRet <$> o .:? "args"
@@ -218,16 +217,16 @@ formBlocks :: Program -> [[Instr]]
 formBlocks (Program []) = []
 formBlocks (Program fns) =
   case Prelude.head fns of
-    Fn _ _ _ ins ->  F.foldr formBlock [] ins
+    Fn _ _ _ ins ->  F.foldl formBlock [] ins
 
 
-formBlock :: Instr -> [[Instr]] -> [[Instr]]
-formBlock instr (current:blocks) =
+formBlock :: [[Instr]] -> Instr -> [[Instr]]
+formBlock (current:blocks) instr =
   case instr of
-    Lab _ -> [instr]:blocks
+    Lab _ -> [instr]:(current:blocks)
     Jmp _ -> []:(current ++ [instr]):blocks
     Ret _ -> []:(current ++ [instr]):blocks
     Br {} -> []:(current ++ [instr]):blocks
     _ -> (current ++ [instr]):blocks
 
-formBlock instr [] = [[instr]]
+formBlock [] instr = [[instr]]
