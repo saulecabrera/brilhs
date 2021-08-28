@@ -1,11 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Bril where
+module Bril
+  ( Program, formBlocks ) where
 
 import Data.Text
 import Data.Aeson
 import Data.Aeson.Types
 import Data.HashMap.Strict as HM
-import Data.Foldable (asum)
+import Data.Foldable as F
 import Data.Scientific
 import Control.Applicative ((<|>))
 import Control.Monad (mzero)
@@ -82,7 +83,6 @@ data UnaryOperation = Not
                     | Alloc
                     deriving (Show)
 
--- pointerOf :: Ty -> Ty
 pointerOf = Pointer
 
 mkOptionalDest :: Maybe Ty -> Maybe Ident -> Maybe Dest
@@ -132,7 +132,7 @@ instance FromJSON Ty where
          return $ pointerOf ty
 
 instance FromJSON Instr where
-  parseJSON = withObject "instr" $ \o -> asum [
+  parseJSON = withObject "instr" $ \o -> F.asum [
                                                 Lab <$> o .: "label"
                                               , parseOp o
                                               ]
@@ -159,9 +159,9 @@ parseOp o = do
     "phi" ->
       Phi <$> (Dest <$> o .: "type" <*> o .: "dest") <*> o .: "labels" <*> o .: "args"
     "call" ->
-      Call <$> (mkOptionalDest <$> o .:? "type" <*> o .:? "dest") <*> (Prelude.head <$> o .: "funcs") <*> o .: "args"
+      Call <$> (mkOptionalDest <$> o .:? "type" <*> o .:? "dest") <*> (Prelude.head <$> o .: "funcs") <*> (o .:? "args" .!= [])
     "jmp" ->
-      Jmp <$> o .: "labels"
+      Jmp . Prelude.head <$> o .: "labels"
     "br" ->
       Br . Prelude.head <$> (o .: "args") <*> (Prelude.head <$> (o .: "labels")) <*> ((!! 1) <$> o .: "labels")
     "ret" -> mkRet <$> o .:? "args"
@@ -211,3 +211,31 @@ instance FromJSON UnaryOperation where
       "load" -> return Load
       "alloc" -> return Alloc
       _ -> mzero
+
+
+formBlocks :: Program -> [[Instr]]
+formBlocks (Program []) = []
+formBlocks (Program fns) =
+  case Prelude.head fns of
+    -- TODO: Reverse this list
+    Fn _ _ _ ins ->  F.foldl formBlock [] ins
+
+
+formBlock :: [[Instr]] -> Instr -> [[Instr]]
+formBlock (current:blocks) instr =
+  case instr of
+    Lab _ -> [instr]:(current:blocks)
+    _ ->
+      if terminator $ Prelude.last current
+         then [instr]:current:blocks
+       else (current ++ [instr]):blocks
+
+formBlock [] instr = [[instr]]
+
+terminator instr =
+  case instr of
+    Jmp _ -> True
+    Ret _ -> True
+    Br {} -> True
+    _     -> False
+
