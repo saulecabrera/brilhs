@@ -159,7 +159,7 @@ parseOp o = do
     "phi" ->
       Phi <$> (Dest <$> o .: "type" <*> o .: "dest") <*> o .: "labels" <*> o .: "args"
     "call" ->
-      Call <$> (mkOptionalDest <$> o .:? "type" <*> o .:? "dest") <*> (Prelude.head <$> o .: "funcs") <*> o .: "args"
+      Call <$> (mkOptionalDest <$> o .:? "type" <*> o .:? "dest") <*> (Prelude.head <$> o .: "funcs") <*> (o .:? "args" .!= [])
     "jmp" ->
       Jmp . Prelude.head <$> o .: "labels"
     "br" ->
@@ -217,6 +217,7 @@ formBlocks :: Program -> [[Instr]]
 formBlocks (Program []) = []
 formBlocks (Program fns) =
   case Prelude.head fns of
+    -- TODO: Reverse this list
     Fn _ _ _ ins ->  F.foldl formBlock [] ins
 
 
@@ -224,9 +225,17 @@ formBlock :: [[Instr]] -> Instr -> [[Instr]]
 formBlock (current:blocks) instr =
   case instr of
     Lab _ -> [instr]:(current:blocks)
-    Jmp _ -> []:(current ++ [instr]):blocks
-    Ret _ -> []:(current ++ [instr]):blocks
-    Br {} -> []:(current ++ [instr]):blocks
-    _ -> (current ++ [instr]):blocks
+    _ ->
+      if terminator $ Prelude.last current
+         then [instr]:current:blocks
+       else (current ++ [instr]):blocks
 
 formBlock [] instr = [[instr]]
+
+terminator instr =
+  case instr of
+    Jmp _ -> True
+    Ret _ -> True
+    Br {} -> True
+    _     -> False
+
