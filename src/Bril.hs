@@ -9,7 +9,6 @@ import Data.HashMap.Strict as HM
 import Data.Foldable as F
 import Data.Scientific
 import Control.Applicative ((<|>))
-import Control.Monad (mzero)
 
 -- Types
 data Ty = Int | Bool | Float | Pointer Ty deriving (Show)
@@ -92,8 +91,8 @@ mkOptionalDest (Just ty) (Just ident) = Just $ Dest ty ident
 
 mkRet :: Maybe [Maybe Arg] -> Instr
 mkRet Nothing    = Ret Nothing
-mkRet (Just [])  = Ret Nothing
 mkRet (Just [a]) = Ret a
+mkRet (Just _)  = Ret Nothing
 
 -- JSON instances
 
@@ -130,6 +129,9 @@ instance FromJSON Ty where
        Just o -> do
          ty <- parseJSON o
          return $ pointerOf ty
+       _  ->  typeMismatch "Object containing a ptr key" (Object o)
+
+  parseJSON val =  typeMismatch "String (int, float, bool) or Object" val
 
 instance FromJSON Instr where
   parseJSON = withObject "instr" $ \o -> F.asum [
@@ -178,6 +180,8 @@ instance FromJSON Literal where
   parseJSON (Data.Aeson.Types.Number s) =
     return $ Bril.Number s
 
+  parseJSON val = typeMismatch "Bool or Number" val
+
 instance FromJSON BinaryOperation where
   parseJSON (String s) =
     case s of
@@ -201,7 +205,9 @@ instance FromJSON BinaryOperation where
      "fge" -> return FGe
      "and" -> return And
      "or" -> return Or
-     _ -> mzero
+     _ -> typeMismatch "Valid binary operation" $ String s
+
+  parseJSON val =  typeMismatch "String" val
 
 instance FromJSON UnaryOperation where
   parseJSON (String s) =
@@ -210,7 +216,9 @@ instance FromJSON UnaryOperation where
       "id" -> return Id
       "load" -> return Load
       "alloc" -> return Alloc
-      _ -> mzero
+      _ -> typeMismatch "Valid unary operation" $ String s
+
+  parseJSON val  = typeMismatch "String" val
 
 
 formBlocks :: Program -> [[Instr]]
