@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 import Bril
+import Program (Program)
 import System.Environment
 import Data.Aeson (eitherDecode)
 import qualified Data.ByteString.Lazy as BLU
@@ -13,4 +14,5 @@ main = do
   case (eitherDecode contents :: Either String Program) of
     Right program ->   print $ formBlocks program
     Left reason -> print reason
+
 

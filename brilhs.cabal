@@ -25,7 +25,12 @@ source-repository head
 
 library
   exposed-modules:
+      Block
       Bril
+      Fn
+      Id
+      Instr
+      Program
   other-modules:
       Paths_brilhs
   hs-source-dirs:
