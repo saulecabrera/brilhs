@@ -1,0 +1,27 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: haskell/actions/setup@v1
+        with:
+          ghc-version: '8.10.4'
+          enable-stack: true
+          stack-version: 'latest'
+
+      - name: Install hspec-discover
+        run: stack install hspec-discover
+
+      - name: Install hlint
+        run: stack install hlint
+
+      - name: Lint
+        run: hlint . 
+
+      - name: Tests
+        run: stack test
