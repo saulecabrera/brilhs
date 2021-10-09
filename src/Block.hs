@@ -10,7 +10,7 @@ module Block
 import Data.Text
 import Instr (Instr)
 
-data Block = Block Text [Instr] deriving (Show)
+data Block = Block Text [Instr] deriving (Show, Eq)
 
 instrs :: Block -> [Instr]
 instrs (Block _ i) = i

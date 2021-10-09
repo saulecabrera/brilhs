@@ -31,7 +31,7 @@ data Instr = Label Text
            | Phi Dest [Text] [Arg]
            | Print [Arg]
            | Nop
-           deriving (Show)
+           deriving (Show, Eq)
 
 data BinaryOperation = Add
                      | FAdd
@@ -54,13 +54,13 @@ data BinaryOperation = Add
                      | FGe
                      | And
                      | Or
-                     deriving (Show)
+                     deriving (Show, Eq)
 
 data UnaryOperation = Not
                     | Id
                     | Load
                     | Alloc
-                    deriving (Show)
+                    deriving (Show, Eq)
 
 ret :: Maybe [Maybe Arg] -> Instr
 ret Nothing    = Ret Nothing

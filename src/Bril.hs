@@ -13,8 +13,7 @@ formBlocks :: Program -> [Block]
 formBlocks (Program []) = []
 formBlocks (Program fns) =
   case Prelude.head fns of
-    -- TODO: Reverse this list
-    Fn _ _ _ ins ->  F.foldl formBlock [] ins
+    Fn _ _ _ ins ->  reverse $ F.foldl formBlock [] ins
 
 
 formBlock :: [Block] -> Instr -> [Block]
@@ -26,4 +25,5 @@ formBlock (current:blocks) instr =
          then anonymous [instr]:(current:blocks)
        else appendInstr current instr:blocks
 
+formBlock [] i@(Label name) = [Block name [i]]
 formBlock [] instr = [anonymous [instr]]

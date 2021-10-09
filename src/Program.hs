@@ -6,7 +6,7 @@ module Program
 import Fn (Fn) 
 import Data.Aeson
 
-newtype Program = Program [Fn] deriving (Show)
+newtype Program = Program [Fn] deriving (Show, Eq)
 
 instance FromJSON Program where
   parseJSON = withObject "program" $ \o ->

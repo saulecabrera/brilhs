@@ -16,17 +16,17 @@ import Data.Aeson
 import Data.Aeson.Types (typeMismatch, Value (Bool, Number))
 import Data.HashMap.Strict as HM
 
-data Ty = Int | Bool | Float | Pointer Ty deriving (Show)
+data Ty = Int | Bool | Float | Pointer Ty deriving (Show, Eq)
 type OptionalType = Maybe Ty
 
 type Ident = Text
 type Arg = Text
 
-data Dest = Dest Ty Ident deriving (Show)
+data Dest = Dest Ty Ident deriving (Show, Eq)
 
 data Literal = Boolean Bool
              | Number Scientific
-             deriving (Show)
+             deriving (Show, Eq)
 
 
 pointerOf :: Ty -> Ty

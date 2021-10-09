@@ -65,6 +65,7 @@ test-suite brilhs-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      BrilSpec
       Paths_brilhs
   hs-source-dirs:
       test
@@ -74,6 +75,7 @@ test-suite brilhs-test
     , base >=4.7 && <5
     , brilhs
     , bytestring
+    , hspec
     , scientific
     , text
     , unordered-containers
