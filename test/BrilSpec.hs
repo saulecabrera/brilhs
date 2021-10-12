@@ -7,7 +7,7 @@ import Program (Program(..))
 import Fn (Fn(..), void)
 import Instr (Instr(..))
 import Data.Text
-import Block (Block(..), anonymous)
+import Block (Block(..), indexed)
 
 spec = 
   describe "formBlocks" $ do
@@ -17,8 +17,8 @@ spec =
 
     it "places labels as the first instruction of a block" $ do
       let actualBlocks = formBlocks $ Program [main' [Label "start", Label "end"]]
-      let expectedBlocks = [ Block "start" [Label "start"]
-                           , Block "end" [Label "end"]
+      let expectedBlocks = [ Block "start" []
+                           , Block "end" []
                            ]
 
       actualBlocks `shouldBe` expectedBlocks
@@ -29,13 +29,13 @@ spec =
 
     it "divides blocks by terminator instructions" $ do
       let actualBlocks = formBlocks $ Program [main' [ Print ["1"]
-                                                   , Jmp "label"
-                                                   , Label "label"
-                                                   , Print ["2"]
-                                                   ]
+                                                     , Jmp "label"
+                                                     , Label "label"
+                                                     , Print ["2"]
+                                                     ]
                                             ]
-      let expectedBlocks = [ anonymous [Print ["1"], Jmp "label"]
-                           , Block "label" [Label "label", Print ["2"]]
+      let expectedBlocks = [ Block "block_0" [Print ["1"], Jmp "label"]
+                           , Block "label" [Print ["2"]]
                            ]
 
       actualBlocks `shouldBe` expectedBlocks 

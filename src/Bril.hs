@@ -7,23 +7,45 @@ import Data.Foldable as F
 import Program (Program(..))
 import Instr (Instr(..), terminator)
 import Fn (Fn(..))
-import Block (Block(..), instrs, appendInstr, anonymous)
+import Block
+  ( Block(..)
+  , instrs
+  , appendInstr
+  , named
+  , indexed
+  , hasTerminator
+  )
 
 formBlocks :: Program -> [Block]
 formBlocks (Program []) = []
 formBlocks (Program fns) =
+  -- TODO: Investigate the implications of processing all the functions
   case Prelude.head fns of
-    Fn _ _ _ ins ->  reverse $ F.foldl formBlock [] ins
+    Fn _ _ _ ins ->  reverse $ F.foldl formBlock [] (zip [0..length ins] ins)
 
 
-formBlock :: [Block] -> Instr -> [Block]
-formBlock (current:blocks) instr =
+formBlock :: [Block] -> (Int, Instr) -> [Block]
+formBlock blocks@(current:rest) (idx, instr) =
   case instr of
-    Label name -> Block name [instr]:(current:blocks)
-    _ ->
-      if terminator $ Prelude.last $ instrs current
-         then anonymous [instr]:(current:blocks)
-       else appendInstr current instr:blocks
+    Label name -> named name:blocks
+    _ -> appendInstr block instr:rest
+      where
+        block = if hasTerminator current
+                   then indexed idx
+                   else current
 
-formBlock [] i@(Label name) = [Block name [i]]
-formBlock [] instr = [anonymous [instr]]
+formBlock [] (_, Label name) = [named name]
+formBlock [] (idx, instr) = [appendInstr (indexed idx) instr]
+
+-- CFG calculation notes
+--  Data structure needed to hold relationship between block names and blocks,
+--  to make lookup O(1); another approach is to calculate successors inline,
+--  when  creating the blocks. This would potentially work because the
+--  program is assume to be valid at this stage (at least there shouldn't be
+--  any missing or invalid labels). One of the main disadvantages of the approach mentioned above is block
+--  lookup: given a label name, searching the corresponding block is at least
+--  O(n)
+--
+--  Last instruction dictates successors: if the last instruction is `Jmp` or `Br`,
+--  sucessors are the labels of each of the insructions
+--  If the last instruction is `Ret`, there are no successors
