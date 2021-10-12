@@ -44,7 +44,7 @@ library
     , unordered-containers
   default-language: Haskell2010
 
-executable brilhs-exe
+executable bril
   main-is: Main.hs
   other-modules:
       Paths_brilhs
