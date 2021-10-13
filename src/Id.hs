@@ -14,7 +14,7 @@ import Data.Text
 import Data.Scientific (Scientific)
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch, Value (Bool, Number))
-import Data.HashMap.Strict as HM
+import Data.HashMap.Lazy as HM
 
 data Ty = Int | Bool | Float | Pointer Ty deriving (Show, Eq)
 type OptionalType = Maybe Ty

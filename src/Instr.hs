@@ -11,7 +11,7 @@ module Instr
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Text
-import  Id (Literal, Arg, Dest(..), optionalDest, Ident)
+import Id (Literal, Arg, Dest(..), optionalDest, Ident)
 import Data.Foldable as F
 import Control.Applicative ((<|>))
 
