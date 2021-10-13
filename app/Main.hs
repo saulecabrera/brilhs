@@ -12,7 +12,9 @@ main = do
   args <- getArgs
   contents <- BLU.readFile $ Prelude.head args
   case (eitherDecode contents :: Either String Program) of
-    Right program ->   print $ formBlocks program
+    Right program ->   do
+      print program
+      print $ formBlocks program
     Left reason -> print reason
 
 
