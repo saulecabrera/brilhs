@@ -27,6 +27,7 @@ library
   exposed-modules:
       Block
       Bril
+      CFG
       Fn
       Id
       Instr
@@ -39,6 +40,7 @@ library
       aeson
     , base >=4.7 && <5
     , bytestring
+    , mtl
     , scientific
     , text
     , unordered-containers
@@ -56,6 +58,7 @@ executable bril
     , base >=4.7 && <5
     , brilhs
     , bytestring
+    , mtl
     , scientific
     , text
     , unordered-containers
@@ -76,6 +79,7 @@ test-suite brilhs-test
     , brilhs
     , bytestring
     , hspec
+    , mtl
     , scientific
     , text
     , unordered-containers

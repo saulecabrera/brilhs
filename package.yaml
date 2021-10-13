@@ -26,6 +26,7 @@ dependencies:
 - unordered-containers
 - scientific
 - bytestring
+- mtl
 
 library:
   source-dirs: src
