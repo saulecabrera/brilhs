@@ -13,8 +13,8 @@ main = do
   contents <- BLU.readFile $ Prelude.head args
   case (eitherDecode contents :: Either String Program) of
     Right program ->   do
-      print program
       print $ formBlocks program
+      print $ cfg program
     Left reason -> print reason
 
 

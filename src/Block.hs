@@ -12,7 +12,7 @@ module Block
 import Data.Text
 import Instr (Instr, terminator)
 
-data Block = Block Text [Instr] deriving (Show, Eq)
+data Block = Block Text [Instr] deriving (Eq, Show)
 
 instrs :: Block -> [Instr]
 instrs (Block _ i) = i

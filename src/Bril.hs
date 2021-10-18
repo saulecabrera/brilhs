@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bril 
   ( formBlocks
+  , cfg
   ) where
 
 import Data.Foldable as F
@@ -15,6 +16,13 @@ import Block
   , indexed
   , hasTerminator
   )
+import qualified CFG
+
+cfg ::Program -> CFG.CFG
+cfg program =
+  CFG.fromBlocks blocks
+    where
+      blocks = formBlocks program
 
 formBlocks :: Program -> [Block]
 formBlocks (Program []) = []
