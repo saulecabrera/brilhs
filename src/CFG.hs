@@ -52,6 +52,6 @@ successors (Block _ ins) addr blocks idx =
 instance Show CFG where
   show (CFG m) = Data.Foldable.foldl f "" (M.toList m)
     where
-      f = \acc (k, bs) -> acc ++ "\n" ++ show k ++ "->" ++ blocks bs
+      f = \acc (k, bs) -> acc ++ "\n" ++ show k ++ " -> " ++ blocks bs
       blocks bs = show $ Prelude.map (\(Block name _) -> name ) bs
       
