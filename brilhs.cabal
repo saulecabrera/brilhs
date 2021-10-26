@@ -41,6 +41,7 @@ library
     , base >=4.7 && <5
     , bytestring
     , mtl
+    , optparse-applicative
     , scientific
     , text
     , unordered-containers
@@ -59,6 +60,7 @@ executable bril
     , brilhs
     , bytestring
     , mtl
+    , optparse-applicative
     , scientific
     , text
     , unordered-containers
@@ -80,6 +82,7 @@ test-suite brilhs-test
     , bytestring
     , hspec
     , mtl
+    , optparse-applicative
     , scientific
     , text
     , unordered-containers
