@@ -18,7 +18,7 @@ import Block
   )
 import qualified CFG
 
-cfg ::Program -> CFG.CFG
+cfg :: Program -> CFG.CFG
 cfg program =
   CFG.fromBlocks blocks
     where
