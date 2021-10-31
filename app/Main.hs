@@ -7,11 +7,16 @@ import Data.Aeson (eitherDecode)
 import qualified Data.ByteString.Lazy as BSL
 import Data.Text
 import Options.Applicative
-import Data.Foldable (traverse_)
+import qualified Data.ByteString
+import GHC.IO.Handle.FD (openFile)
+import GHC.IO.IOMode (IOMode(ReadMode))
+import System.IO (stdin)
 
 data Level = Program | Blocks | CFG deriving (Show, Read)
 
-data Options = Options { input :: Text
+data Input = File FilePath | Stdin
+
+data Options = Options { input :: Input
                        , level :: Level
                        }
 
@@ -24,7 +29,12 @@ main = process =<< execParser opts
 
 process :: Options -> IO ()
 process (Options f l) = do
-  contents  <- BSL.readFile $ unpack f
+  handle <- case f of 
+              File p -> openFile p ReadMode
+              Stdin -> return stdin
+
+  contents <- BSL.hGetContents handle
+
   case (eitherDecode contents :: Either String Program) of
     Right program -> do
       case l of 
@@ -37,10 +47,24 @@ process (Options f l) = do
 
 options :: Parser Options 
 options = Options
-  <$> argument str (metavar "INPUT")
+  <$> inputParser
   <*> option auto
       ( long "level"
       <> short 'l'
       <> showDefault 
       <> value CFG
       <> help "Representation level")
+
+inputParser = fileInput <|> stdinInput
+
+fileInput :: Parser Input
+fileInput = File <$> strOption
+  ( long "file"
+  <> short 'f'
+  <>  metavar "FILENAME"
+  <> help "Input file")
+
+stdinInput :: Parser Input
+stdinInput = flag' Stdin
+  ( long "stdin"
+  <> help "Read from stdin")
