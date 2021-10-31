@@ -122,7 +122,7 @@ instance FromJSON BinaryOperation where
      "fadd" -> return FAdd
      "ptradd" -> return  PtrAdd
      "mul" -> return Mul
-     "fmul" -> return FMul
+     "fmult" -> return FMul
      "sub" -> return  Sub
      "fsub" -> return FSub
      "div" -> return Div
