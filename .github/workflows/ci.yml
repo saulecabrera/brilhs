@@ -45,7 +45,7 @@ jobs:
       - name: Tests
         run: stack test
 
-      - name: Turn tests
+      - name: Turnt tests
         run: |
           cd test/integration/cfg
           turnt *.bril
