@@ -1,29 +1,45 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bril 
   ( formBlocks
+  , cfg
   ) where
 
 import Data.Foldable as F
 import Program (Program(..))
 import Instr (Instr(..), terminator)
 import Fn (Fn(..))
-import Block (Block(..), instrs, appendInstr, anonymous)
+import Block
+  ( Block(..)
+  , instrs
+  , appendInstr
+  , named
+  , indexed
+  , hasTerminator
+  )
+import qualified CFG
+
+cfg :: Program -> CFG.CFG
+cfg program =
+  CFG.fromBlocks blocks
+    where
+      blocks = formBlocks program
 
 formBlocks :: Program -> [Block]
 formBlocks (Program []) = []
 formBlocks (Program fns) =
+  -- TODO: Investigate the implications of processing all the functions
   case Prelude.head fns of
-    Fn _ _ _ ins ->  reverse $ F.foldl formBlock [] ins
+    Fn _ _ _ ins ->  reverse $ F.foldl formBlock [] (zip [0..length ins] ins)
 
 
-formBlock :: [Block] -> Instr -> [Block]
-formBlock (current:blocks) instr =
+formBlock :: [Block] -> (Int, Instr) -> [Block]
+formBlock blocks@(current:rest) (idx, instr) =
   case instr of
-    Label name -> Block name [instr]:(current:blocks)
-    _ ->
-      if terminator $ Prelude.last $ instrs current
-         then anonymous [instr]:(current:blocks)
-       else appendInstr current instr:blocks
+    Label name -> named name:blocks
+    _ -> 
+      if hasTerminator current
+         then appendInstr (indexed idx) instr:blocks
+         else appendInstr current instr:rest
 
-formBlock [] i@(Label name) = [Block name [i]]
-formBlock [] instr = [anonymous [instr]]
+formBlock [] (_, Label name) = [named name]
+formBlock [] (idx, instr) = [appendInstr (indexed idx) instr]

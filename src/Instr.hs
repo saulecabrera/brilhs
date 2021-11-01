@@ -11,7 +11,7 @@ module Instr
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Text
-import  Id (Literal, Arg, Dest(..), optionalDest, Ident)
+import Id (Literal, Arg, Dest(..), optionalDest, Ident)
 import Data.Foldable as F
 import Control.Applicative ((<|>))
 
@@ -122,7 +122,7 @@ instance FromJSON BinaryOperation where
      "fadd" -> return FAdd
      "ptradd" -> return  PtrAdd
      "mul" -> return Mul
-     "fmul" -> return FMul
+     "fmult" -> return FMul
      "sub" -> return  Sub
      "fsub" -> return FSub
      "div" -> return Div

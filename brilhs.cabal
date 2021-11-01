@@ -27,6 +27,7 @@ library
   exposed-modules:
       Block
       Bril
+      CFG
       Fn
       Id
       Instr
@@ -39,12 +40,14 @@ library
       aeson
     , base >=4.7 && <5
     , bytestring
+    , mtl
+    , optparse-applicative
     , scientific
     , text
     , unordered-containers
   default-language: Haskell2010
 
-executable brilhs-exe
+executable bril
   main-is: Main.hs
   other-modules:
       Paths_brilhs
@@ -56,6 +59,8 @@ executable brilhs-exe
     , base >=4.7 && <5
     , brilhs
     , bytestring
+    , mtl
+    , optparse-applicative
     , scientific
     , text
     , unordered-containers
@@ -76,6 +81,8 @@ test-suite brilhs-test
     , brilhs
     , bytestring
     , hspec
+    , mtl
+    , optparse-applicative
     , scientific
     , text
     , unordered-containers

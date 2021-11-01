@@ -13,6 +13,25 @@ jobs:
           ghc-version: '8.10.4'
           enable-stack: true
           stack-version: 'latest'
+      - uses: actions/setup-python@v2
+        with:
+            python-version: '3.x'
+            architecture: x64
+
+      - name: Ensure pip
+        run: python3 -m ensurepip --upgrade
+
+      - name: Install turnt
+        run: python3 -m pip install --user turnt
+
+      - name: Install flit
+        run:  python3 -m pip install flit
+
+      - name: Install bril tooling
+        run: |
+          git clone https://github.com/sampsyo/bril
+          cd bril/bril-txt
+          flit install --symlink --user
 
       - name: Install hspec-discover
         run: stack install hspec-discover
@@ -25,3 +44,10 @@ jobs:
 
       - name: Tests
         run: stack test
+
+      - name: Turnt tests
+        run: |
+          cd test/integration/cfg
+          turnt *.bril
+
+

@@ -26,12 +26,14 @@ dependencies:
 - unordered-containers
 - scientific
 - bytestring
+- mtl
+- optparse-applicative
 
 library:
   source-dirs: src
 
 executables:
-  brilhs-exe:
+  bril:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
