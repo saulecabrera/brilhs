@@ -1,2 +1,2 @@
-command = "bril2json < {filename} | stack run -- --stdin"
+command = "bril2json < {filename} > {filename}.json && stack run -- -f {filename}.json"
 output.out = "-"
