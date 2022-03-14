@@ -1,4 +1,6 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 import Bril
 import Optimizer (Passes (..))
@@ -65,9 +67,10 @@ optimizationsParser = many (option str
   <> help "Optimization passes")) <&> validateOptimizations
 
 validateOptimizations :: [Text] -> [Passes]
-validateOptimizations opts = Prelude.map (\o -> case o of
-                                          "dce" -> DCE
-                                          _ -> error $ "Unknown optimization: " ++ show o) opts
+validateOptimizations = Prelude.map validate
+  where validate o = case o of 
+                      "dce" -> DCE
+                      _ -> error $ "Unknown optimization: " ++ show o
 
 validateEmit :: Text -> Emit
 validateEmit e = case e of
