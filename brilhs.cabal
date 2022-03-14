@@ -71,7 +71,6 @@ test-suite brilhs-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      BrilSpec
       Paths_brilhs
   hs-source-dirs:
       test
