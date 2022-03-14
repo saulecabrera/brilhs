@@ -2,6 +2,7 @@
 module Bril 
   ( formBlocks
   , cfg
+  , optimize
   ) where
 
 import Data.Foldable as F
@@ -17,20 +18,24 @@ import Block
   , hasTerminator
   )
 import qualified CFG
+import qualified Optimizer
 
+-- When processing multiple functions
+-- extend the CFG to be named, 1 per function
+-- at that point, this function should return an array of cfgs
 cfg :: Program -> CFG.CFG
-cfg program =
+cfg (Program ((Fn _ _ _ ins):_)) =
   CFG.fromBlocks blocks
     where
-      blocks = formBlocks program
+      blocks = formBlocks ins
 
-formBlocks :: Program -> [Block]
-formBlocks (Program []) = []
-formBlocks (Program fns) =
-  -- TODO: Investigate the implications of processing all the functions
-  case Prelude.head fns of
-    Fn _ _ _ ins ->  reverse $ F.foldl formBlock [] (zip [0..length ins] ins)
+cfg (Program []) =
+  CFG.fromBlocks []
 
+
+formBlocks :: [Instr] -> [Block]
+formBlocks ins =
+    reverse $ F.foldl formBlock [] (zip [0..length ins] ins)
 
 formBlock :: [Block] -> (Int, Instr) -> [Block]
 formBlock blocks@(current:rest) (idx, instr) =
@@ -43,3 +48,11 @@ formBlock blocks@(current:rest) (idx, instr) =
 
 formBlock [] (_, Label name) = [named name]
 formBlock [] (idx, instr) = [appendInstr (indexed idx) instr]
+
+optimize :: Program -> [Optimizer.Passes] -> Program
+optimize (Program []) _ = Program []
+optimize p [] = p
+optimize (Program ((Fn i d t ins): _)) _ = Program [Fn i d t instrs']
+  where
+    instrs' = concatMap (\(Block _ i) -> i) optimized
+    optimized = Optimizer.dce $ formBlocks ins
