@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Main where
 import Bril
@@ -20,10 +21,9 @@ import System.IO (stdin)
 data Emit = AST | Blocks | CFG deriving (Show, Read)
 
 data Options = Options { input :: Maybe FilePath
-                       , optimizations :: [Passes]
+                       , optimizations :: Maybe [Passes]
                        , emit :: Emit
                        }
-
 main :: IO ()
 main = process =<< execParser opts
   where 
@@ -41,11 +41,15 @@ process (Options f passes e) = do
 
   case (eitherDecode contents :: Either String Program) of
     Right program -> do
-      let optimized = optimize program passes in
+      let 
+        opts = case passes of
+          Just ps -> ps
+          _ -> []
+        optimized = optimize program opts in
         case e of
-          AST -> print $ show optimized
+          AST -> print optimized
           Blocks -> undefined --print $ show $ blocks optimized
-          CFG -> print $ show $ cfg optimized
+          CFG -> print $ cfg optimized
     Left reason -> print reason
 
 options :: Parser Options 
@@ -54,27 +58,30 @@ options = Options
   <*> optimizationsParser
   <*> emitParser
 
-emitParser = option str
+emitParser :: Parser Emit
+emitParser = option emitReader
   ( long "emit"
   <> short 'e'
   <> showDefault 
-  <> value "cfg"
-  <> help "Representation to emit") <&> validateEmit
+  <> value CFG
+  <> help "Representation to emit") 
 
-optimizationsParser = many (option str
-  ( long "optimizations"
+emitReader :: ReadM Emit
+emitReader = eitherReader $ \s -> case s of
+  "ast" -> Right AST
+  "blocks" -> Right Blocks
+  "cfg" -> Right CFG
+  _ -> Left $ "Invalid representation: " ++ s
+
+optimizationsParser :: Parser (Maybe [Passes])
+optimizationsParser = optional $ option optimizationsReader
+  ( long "opt"
   <> short 'O'
-  <> help "Optimization passes")) <&> validateOptimizations
+  <> help "Optimization passes") 
 
-validateOptimizations :: [Text] -> [Passes]
-validateOptimizations = Prelude.map validate
-  where validate o = case o of 
-                      "dce" -> DCE
-                      _ -> error $ "Unknown optimization: " ++ show o
-
-validateEmit :: Text -> Emit
-validateEmit e = case e of
-  "ast" -> AST
-  "blocks" -> Blocks
-  "cfg" -> CFG
-  _ -> error $ "Invalid emit option: " ++ show e
+optimizationsReader :: ReadM [Passes]
+optimizationsReader = str >>= \s -> traverse toPass (splitOn  "," s)
+  where
+    toPass = \case
+      "dce" -> return DCE
+      x -> readerError $ "Invalid optimization pass " ++ show x
