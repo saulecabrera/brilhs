@@ -5,6 +5,8 @@ module Instr
   , UnaryOperation(..)
   , ret
   , terminator
+  , args
+  , dest
   )
   where 
 
@@ -74,6 +76,15 @@ terminator instr =
     Ret _ -> True
     Br {} -> True
     _     -> False
+
+dest :: Instr -> Maybe Dest
+dest (Const d _) = Just d
+dest (Binary d _ _ _) = Just d
+dest (Unary d _ _ ) = Just d
+dest (Call d _ _) = d
+dest (Phi d _ _) = Just d
+dest _ = Nothing
+
 
 instance FromJSON Instr where
   parseJSON = withObject "instr" $ \o -> F.asum [
@@ -153,4 +164,13 @@ instance FromJSON UnaryOperation where
 
   parseJSON val  = typeMismatch "String" val
 
-
+args :: Instr -> [Arg]
+args (Binary _ _ a b) = [a, b]
+args (Unary _ _ a) = [a]
+args (Call _ _ as) = as
+args (Store a b) = [a, b]
+args (Free a) = [a]
+args (Guard a _) = [a]
+args (Phi _ _ as) = as
+args (Print as) = as
+args _ = []

@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.3.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 
@@ -31,6 +31,7 @@ library
       Fn
       Id
       Instr
+      Optimizer
       Program
   other-modules:
       Paths_brilhs
@@ -70,7 +71,6 @@ test-suite brilhs-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      BrilSpec
       Paths_brilhs
   hs-source-dirs:
       test
