@@ -23,11 +23,13 @@ dependencies:
 - base >= 4.7 && < 5
 - text
 - aeson
+- aeson-pretty
 - unordered-containers
 - scientific
 - bytestring
 - mtl
 - optparse-applicative
+- filepath
 
 library:
   source-dirs: src

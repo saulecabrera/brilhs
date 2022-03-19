@@ -18,4 +18,14 @@ instance FromJSON Fn where
        <*> o .:? "type"
        <*> o .: "instrs"
 
+instance ToJSON Fn where
+  toJSON (Fn name args ty instrs) =
+    object [ "name" .= name
+           , "args" .= args
+           , "instrs" .= instrs
+           , "type" .= ty
+           ]
+
 void name args = Fn name args Nothing
+
+

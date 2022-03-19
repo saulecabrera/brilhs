@@ -92,6 +92,26 @@ instance FromJSON Instr where
                                               , parseOp o
                                               ]
 
+instance ToJSON Instr where
+  toJSON (Label s) = object ["label" .= s]
+  toJSON (Const (Dest ty id) l) = object ["op" .= String "const", "dest" .= id, "type" .= ty, "value" .= l ]
+  toJSON (Binary (Dest ty id) op a1 a2) = object [ "op" .= op, "dest" .= id, "type" .= ty, "args" .= [a1, a2] ]
+  toJSON (Unary (Dest ty id) op a) = object [ "op" .= op, "dest" .= id, "type" .= ty, "args" .= [a] ]
+  toJSON (Jmp s) = object [ "op" .= String "jmp", "labels" .= [s] ]
+  toJSON (Br a s1 s2) = object [ "op" .= String "br", "args" .= [a], "labels" .= [s1, s2] ]
+  toJSON (Ret a) = object [ "op" .= String "ret", "args" .= [a] ]
+  toJSON (Call (Just (Dest ty id)) i a) = object [ "op" .= String "call", "dest" .= id, "type" .= ty, "args" .= [a], "funcs" .= [i] ]
+  toJSON (Call Nothing i a) = object [ "op" .= String "call", "dest" .= Null, "type" .= Null, "args" .= [a], "funcs" .= [i] ]
+  toJSON (Store a1 a2) = object [ "op" .= String "store", "args" .= [a1, a2] ]
+  toJSON (Free a) = object [ "op" .= String "free", "args" .= [a] ]
+  toJSON Speculate = object [ "op" .= String "speculate" ]
+  toJSON Commit = object [ "op" .= String "commit" ]
+  toJSON (Guard a s) = object [ "op" .= String "guard", "args" .= [a], "labels" .= [s] ]
+  toJSON (Phi (Dest ty id) s a) = object [ "op" .= String "phi", "dest" .= id, "type" .= ty, "args" .= [a], "labels" .= [s] ]
+  toJSON (Print a) = object [ "op" .= String "print", "args" .= a ]
+  toJSON Nop = object [ "op" .= String "nop" ]
+  
+
 parseOp :: Object -> Parser Instr
 parseOp o = do
   op <- o .: "op" :: Parser Text
@@ -144,7 +164,8 @@ instance FromJSON BinaryOperation where
      "flt" -> return FLt
      "gt" -> return Gt
      "fgt" -> return FGt
-     "le" -> return FLe
+     "le" -> return Le
+     "fle" -> return FLe
      "ge" -> return Ge
      "fge" -> return FGe
      "and" -> return And
@@ -152,6 +173,29 @@ instance FromJSON BinaryOperation where
      _ -> typeMismatch "Valid binary operation" $ String s
 
   parseJSON val =  typeMismatch "String" val
+
+instance ToJSON BinaryOperation where
+  toJSON Add = String "add"
+  toJSON FAdd = String "fadd"
+  toJSON PtrAdd = String "ptradd"
+  toJSON Mul = String "mul"
+  toJSON FMul = String "fmult"
+  toJSON Sub = String "sub"
+  toJSON FSub = String "fsub"
+  toJSON Div = String "div"
+  toJSON FDiv = String "fdiv"
+  toJSON Eq = String "eq"
+  toJSON FEq = String "feq"
+  toJSON Lt = String "lt"
+  toJSON FLt = String "flt"
+  toJSON Gt = String "gt"
+  toJSON FGt = String "fgt"
+  toJSON FLe = String "fle"
+  toJSON Le = String "le"
+  toJSON Ge = String "ge"
+  toJSON FGe = String "fge"
+  toJSON And = String "and"
+  toJSON Or = String "or"
 
 instance FromJSON UnaryOperation where
   parseJSON (String s) =
@@ -163,6 +207,12 @@ instance FromJSON UnaryOperation where
       _ -> typeMismatch "Valid unary operation" $ String s
 
   parseJSON val  = typeMismatch "String" val
+
+instance ToJSON UnaryOperation where
+  toJSON Not = String "not"
+  toJSON Id = String "id"
+  toJSON Load = String "load"
+  toJSON Alloc = String "alloc"
 
 args :: Instr -> [Arg]
 args (Binary _ _ a b) = [a, b]

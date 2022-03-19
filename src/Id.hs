@@ -28,6 +28,10 @@ data Literal = Boolean Bool
              | Number Scientific
              deriving (Show, Eq)
 
+instance ToJSON Literal where
+  toJSON (Boolean b) = Data.Aeson.Types.Bool b
+  toJSON (Id.Number n) = Data.Aeson.Types.Number n
+
 
 pointerOf :: Ty -> Ty
 pointerOf = Pointer
@@ -41,6 +45,9 @@ optionalDest (Just ty) (Just ident) = Just $ Dest ty ident
 instance FromJSON Dest where
   parseJSON = withObject "dest" $ \o->
     Dest <$> o .: "type" <*> o .: "name"
+
+instance ToJSON Dest where
+  toJSON (Dest ty ident) = object ["type" .= ty, "name" .= ident]
 
 instance FromJSON Ty where
   parseJSON (String "int") =
@@ -64,6 +71,11 @@ instance FromJSON Ty where
 
   parseJSON val =  typeMismatch "String (int, float, bool) or Object" val
 
+instance ToJSON Ty where
+  toJSON Int = String "int"
+  toJSON Float = String "float"
+  toJSON Id.Bool = String "bool"
+  toJSON (Pointer ty) = object ["ptr" .= toJSON ty]
 
 instance FromJSON Literal where
   parseJSON (Data.Aeson.Types.Bool b) =
