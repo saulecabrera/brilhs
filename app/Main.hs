@@ -1,35 +1,35 @@
-{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE BlockArguments    #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE LambdaCase #-}
 
 module Main where
-import Bril
-import Optimizer (Passes (..))
-import Program (Program)
-import System.Environment
-import Data.Aeson (eitherDecode)
-import Data.Aeson.Encode.Pretty (encodePretty)
-import Data.Maybe (Maybe (..))
-import qualified Data.ByteString.Lazy as BSL
-import qualified Data.ByteString.Lazy.Char8 as BSL8
-import Data.Text
-import Data.Functor ((<&>))
-import Options.Applicative
+import           Bril
+import           Data.Aeson                 (eitherDecode)
+import           Data.Aeson.Encode.Pretty   (encodePretty)
 import qualified Data.ByteString
-import GHC.IO.Handle.FD (openFile)
-import GHC.IO.IOMode (IOMode(ReadMode))
-import System.IO (stdin, Handle)
-import System.FilePath.Posix (takeBaseName)
+import qualified Data.ByteString.Lazy       as BSL
+import qualified Data.ByteString.Lazy.Char8 as BSL8
+import           Data.Functor               ((<&>))
+import           Data.Maybe                 (Maybe (..))
+import           Data.Text
+import           GHC.IO.Handle.FD           (openFile)
+import           GHC.IO.IOMode              (IOMode (ReadMode))
+import           Optimizer                  (Passes (..))
+import           Options.Applicative
+import           Program                    (Program)
+import           System.Environment
+import           System.FilePath.Posix      (takeBaseName)
+import           System.IO                  (Handle, stdin)
 
 data Emit = AST | CFG | JSON deriving (Show, Read)
 
-data Options = Options { input :: FilePath
+data Options = Options { input         :: FilePath
                        , optimizations :: Maybe [Passes]
-                       , emit :: Emit
+                       , emit          :: Emit
                        }
 main :: IO ()
 main = process =<< execParser opts
-  where 
+  where
     opts = info (options <**> helper)
       ( fullDesc
       <> progDesc "Bril Intermediate Language")
@@ -41,7 +41,7 @@ process opts@(Options f p e) = do
 
   case (eitherDecode contents :: Either String Program) of
     Right program -> do
-      let 
+      let
         optimized = optimize program (passes opts)
         fileName = takeBaseName f
        in
@@ -57,10 +57,10 @@ handle f = openFile f ReadMode
 
 passes :: Options -> [Passes]
 passes (Options _ (Just ps) _) = ps
-passes Options {} = []
+passes Options {}              = []
 
 
-options :: Parser Options 
+options :: Parser Options
 options = Options
   <$> strArgument (metavar "FILE" <> help "Input file")
   <*> optimizationsParser
@@ -70,26 +70,26 @@ emitParser :: Parser Emit
 emitParser = option emitReader
   ( long "emit"
   <> short 'e'
-  <> showDefault 
+  <> showDefault
   <> value CFG
-  <> help "Representation to emit") 
+  <> help "Representation to emit")
 
 emitReader :: ReadM Emit
 emitReader = eitherReader $ \s -> case s of
-  "ast" -> Right AST
-  "cfg" -> Right CFG
+  "ast"  -> Right AST
+  "cfg"  -> Right CFG
   "json" -> Right JSON
-  _ -> Left $ "Invalid representation: " ++ s
+  _      -> Left $ "Invalid representation: " ++ s
 
 optimizationsParser :: Parser (Maybe [Passes])
 optimizationsParser = optional $ option optimizationsReader
   ( long "opt"
   <> short 'O'
-  <> help "Optimization passes") 
+  <> help "Optimization passes")
 
 optimizationsReader :: ReadM [Passes]
 optimizationsReader = str >>= \s -> traverse toPass (splitOn  "," s)
   where
     toPass = \case
       "dce" -> return DCE
-      x -> readerError $ "Invalid optimization pass " ++ show x
+      x     -> readerError $ "Invalid optimization pass " ++ show x

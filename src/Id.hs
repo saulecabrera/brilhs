@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Id 
+module Id
   ( Ident
   , Arg
   , OptionalType
@@ -9,12 +9,12 @@ module Id
   , optionalDest
   )
   where
-  
-import Data.Text
-import Data.Scientific (Scientific)
-import Data.Aeson
-import Data.Aeson.Types (typeMismatch, Value (Bool, Number))
-import Data.HashMap.Lazy as HM
+
+import           Data.Aeson
+import           Data.Aeson.Types  (Value (Bool, Number), typeMismatch)
+import           Data.HashMap.Lazy as HM
+import           Data.Scientific   (Scientific)
+import           Data.Text
 
 data Ty = Int | Bool | Float | Pointer Ty deriving (Show, Eq)
 type OptionalType = Maybe Ty
@@ -29,7 +29,7 @@ data Literal = Boolean Bool
              deriving (Show, Eq)
 
 instance ToJSON Literal where
-  toJSON (Boolean b) = Data.Aeson.Types.Bool b
+  toJSON (Boolean b)   = Data.Aeson.Types.Bool b
   toJSON (Id.Number n) = Data.Aeson.Types.Number n
 
 
@@ -72,9 +72,9 @@ instance FromJSON Ty where
   parseJSON val =  typeMismatch "String (int, float, bool) or Object" val
 
 instance ToJSON Ty where
-  toJSON Int = String "int"
-  toJSON Float = String "float"
-  toJSON Id.Bool = String "bool"
+  toJSON Int          = String "int"
+  toJSON Float        = String "float"
+  toJSON Id.Bool      = String "bool"
   toJSON (Pointer ty) = object ["ptr" .= toJSON ty]
 
 instance FromJSON Literal where

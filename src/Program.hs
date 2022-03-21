@@ -3,8 +3,8 @@ module Program
   ( Program(..)
   ) where
 
-import Fn (Fn) 
-import Data.Aeson
+import           Data.Aeson
+import           Fn         (Fn)
 
 newtype Program = Program [Fn] deriving (Show, Eq)
 

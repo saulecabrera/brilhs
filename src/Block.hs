@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Block 
+module Block
   ( Block(..)
   , instrs
   , appendInstr
@@ -10,8 +10,8 @@ module Block
   )
   where
 
-import Data.Text
-import Instr (Instr, terminator)
+import           Data.Text
+import           Instr     (Instr, terminator)
 
 data Block = Block Text [Instr] deriving (Eq, Show)
 
@@ -19,7 +19,7 @@ instrs :: Block -> [Instr]
 instrs (Block _ i) = i
 
 appendInstr :: Block -> Instr -> Block
-appendInstr (Block n instrs) instr =  
+appendInstr (Block n instrs) instr =
   Block n (instrs ++ [instr])
 
 named :: Text -> Block
@@ -32,7 +32,7 @@ indexed idx =
       name = pack ("block_" ++ show idx)
 
 hasTerminator :: Block -> Bool
-hasTerminator (Block _ []) = False
+hasTerminator (Block _ [])  = False
 hasTerminator (Block _ ins) = terminator $ Prelude.last ins
 
 size :: Block -> Int

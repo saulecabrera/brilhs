@@ -1,26 +1,26 @@
 module CFG where
 
-import Block (Block(..))
-import Instr (Instr(..))
-import Data.HashMap.Lazy as M
-import Data.Text
-import Data.Foldable (traverse_, foldl, Foldable (toList))
-import Control.Monad.State
+import           Block               (Block (..))
+import           Control.Monad.State
+import           Data.Foldable       (Foldable (toList), foldl, traverse_)
+import           Data.HashMap.Lazy   as M
+import           Data.Text
+import           Instr               (Instr (..))
 
 newtype CFG = CFG (M.HashMap Text [Block])
 type BlockAddr = M.HashMap Text Block
 
 data BuildState = BuildState { buildBlocksAddr :: BlockAddr
-                             , buildBlocks :: [Block]
-                             , buildIndex :: Int
-                             , cfg :: CFG
+                             , buildBlocks     :: [Block]
+                             , buildIndex      :: Int
+                             , cfg             :: CFG
                              } deriving(Show)
 
 fromBlocks :: [Block] -> CFG
-fromBlocks blocks = 
+fromBlocks blocks =
   cfg $ execState fromBlocks' BuildState { buildBlocksAddr = Data.Foldable.foldl blockAddress M.empty blocks
                                          , buildIndex = 0
-                                         , cfg = CFG M.empty 
+                                         , cfg = CFG M.empty
                                          , buildBlocks = blocks
                                          }
 
@@ -40,7 +40,7 @@ addBlock b@(Block name _) = modify $ \st@BuildState {buildIndex = idx, cfg = (CF
 
 successors :: Block -> BlockAddr -> [Block] -> Int -> [Block]
 successors (Block _ []) _ _ _ =  []
-successors (Block _ ins) addr blocks idx = 
+successors (Block _ ins) addr blocks idx =
   case Prelude.last ins of
     Jmp to -> [addr M.! to]
     Br _ t f -> [addr M.! t, addr M.! f]
@@ -54,4 +54,4 @@ instance Show CFG where
     where
       f = \acc (k, bs) -> acc ++ "\n" ++ show k ++ " -> " ++ blocks bs
       blocks bs = show $ Prelude.map (\(Block name _) -> name ) bs
-      
+

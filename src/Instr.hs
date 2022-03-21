@@ -8,14 +8,15 @@ module Instr
   , args
   , dest
   )
-  where 
+  where
 
-import Data.Aeson
-import Data.Aeson.Types
-import Data.Text
-import Id (Literal, Arg, Dest(..), optionalDest, Ident)
-import Data.Foldable as F
-import Control.Applicative ((<|>))
+import           Control.Applicative ((<|>))
+import           Data.Aeson
+import           Data.Aeson.Types
+import           Data.Foldable       as F
+import           Data.Text
+import           Id                  (Arg, Dest (..), Ident, Literal,
+                                      optionalDest)
 
 data Instr = Label Text
            | Const Dest Literal
@@ -67,7 +68,7 @@ data UnaryOperation = Not
 ret :: Maybe [Maybe Arg] -> Instr
 ret Nothing    = Ret Nothing
 ret (Just [a]) = Ret a
-ret (Just _)  = Ret Nothing
+ret (Just _)   = Ret Nothing
 
 terminator :: Instr -> Bool
 terminator instr =
@@ -78,12 +79,12 @@ terminator instr =
     _     -> False
 
 dest :: Instr -> Maybe Dest
-dest (Const d _) = Just d
+dest (Const d _)      = Just d
 dest (Binary d _ _ _) = Just d
-dest (Unary d _ _ ) = Just d
-dest (Call d _ _) = d
-dest (Phi d _ _) = Just d
-dest _ = Nothing
+dest (Unary d _ _ )   = Just d
+dest (Call d _ _)     = d
+dest (Phi d _ _)      = Just d
+dest _                = Nothing
 
 
 instance FromJSON Instr where
@@ -110,7 +111,7 @@ instance ToJSON Instr where
   toJSON (Phi (Dest ty id) s a) = object [ "op" .= String "phi", "dest" .= id, "type" .= ty, "args" .= [a], "labels" .= [s] ]
   toJSON (Print a) = object [ "op" .= String "print", "args" .= a ]
   toJSON Nop = object [ "op" .= String "nop" ]
-  
+
 
 parseOp :: Object -> Parser Instr
 parseOp o = do
@@ -149,78 +150,78 @@ parseOp o = do
 instance FromJSON BinaryOperation where
   parseJSON (String s) =
     case s of
-     "add" -> return Add
-     "fadd" -> return FAdd
+     "add"    -> return Add
+     "fadd"   -> return FAdd
      "ptradd" -> return  PtrAdd
-     "mul" -> return Mul
-     "fmult" -> return FMul
-     "sub" -> return  Sub
-     "fsub" -> return FSub
-     "div" -> return Div
-     "fdiv" -> return FDiv
-     "eq" -> return Eq
-     "feq" -> return FEq
-     "lt" -> return Lt
-     "flt" -> return FLt
-     "gt" -> return Gt
-     "fgt" -> return FGt
-     "le" -> return Le
-     "fle" -> return FLe
-     "ge" -> return Ge
-     "fge" -> return FGe
-     "and" -> return And
-     "or" -> return Or
-     _ -> typeMismatch "Valid binary operation" $ String s
+     "mul"    -> return Mul
+     "fmult"  -> return FMul
+     "sub"    -> return  Sub
+     "fsub"   -> return FSub
+     "div"    -> return Div
+     "fdiv"   -> return FDiv
+     "eq"     -> return Eq
+     "feq"    -> return FEq
+     "lt"     -> return Lt
+     "flt"    -> return FLt
+     "gt"     -> return Gt
+     "fgt"    -> return FGt
+     "le"     -> return Le
+     "fle"    -> return FLe
+     "ge"     -> return Ge
+     "fge"    -> return FGe
+     "and"    -> return And
+     "or"     -> return Or
+     _        -> typeMismatch "Valid binary operation" $ String s
 
   parseJSON val =  typeMismatch "String" val
 
 instance ToJSON BinaryOperation where
-  toJSON Add = String "add"
-  toJSON FAdd = String "fadd"
+  toJSON Add    = String "add"
+  toJSON FAdd   = String "fadd"
   toJSON PtrAdd = String "ptradd"
-  toJSON Mul = String "mul"
-  toJSON FMul = String "fmult"
-  toJSON Sub = String "sub"
-  toJSON FSub = String "fsub"
-  toJSON Div = String "div"
-  toJSON FDiv = String "fdiv"
-  toJSON Eq = String "eq"
-  toJSON FEq = String "feq"
-  toJSON Lt = String "lt"
-  toJSON FLt = String "flt"
-  toJSON Gt = String "gt"
-  toJSON FGt = String "fgt"
-  toJSON FLe = String "fle"
-  toJSON Le = String "le"
-  toJSON Ge = String "ge"
-  toJSON FGe = String "fge"
-  toJSON And = String "and"
-  toJSON Or = String "or"
+  toJSON Mul    = String "mul"
+  toJSON FMul   = String "fmult"
+  toJSON Sub    = String "sub"
+  toJSON FSub   = String "fsub"
+  toJSON Div    = String "div"
+  toJSON FDiv   = String "fdiv"
+  toJSON Eq     = String "eq"
+  toJSON FEq    = String "feq"
+  toJSON Lt     = String "lt"
+  toJSON FLt    = String "flt"
+  toJSON Gt     = String "gt"
+  toJSON FGt    = String "fgt"
+  toJSON FLe    = String "fle"
+  toJSON Le     = String "le"
+  toJSON Ge     = String "ge"
+  toJSON FGe    = String "fge"
+  toJSON And    = String "and"
+  toJSON Or     = String "or"
 
 instance FromJSON UnaryOperation where
   parseJSON (String s) =
     case s of
-      "not" -> return Not
-      "id" -> return Id
-      "load" -> return Load
+      "not"   -> return Not
+      "id"    -> return Id
+      "load"  -> return Load
       "alloc" -> return Alloc
-      _ -> typeMismatch "Valid unary operation" $ String s
+      _       -> typeMismatch "Valid unary operation" $ String s
 
   parseJSON val  = typeMismatch "String" val
 
 instance ToJSON UnaryOperation where
-  toJSON Not = String "not"
-  toJSON Id = String "id"
-  toJSON Load = String "load"
+  toJSON Not   = String "not"
+  toJSON Id    = String "id"
+  toJSON Load  = String "load"
   toJSON Alloc = String "alloc"
 
 args :: Instr -> [Arg]
 args (Binary _ _ a b) = [a, b]
-args (Unary _ _ a) = [a]
-args (Call _ _ as) = as
-args (Store a b) = [a, b]
-args (Free a) = [a]
-args (Guard a _) = [a]
-args (Phi _ _ as) = as
-args (Print as) = as
-args _ = []
+args (Unary _ _ a)    = [a]
+args (Call _ _ as)    = as
+args (Store a b)      = [a, b]
+args (Free a)         = [a]
+args (Guard a _)      = [a]
+args (Phi _ _ as)     = as
+args (Print as)       = as
+args _                = []

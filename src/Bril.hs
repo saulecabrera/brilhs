@@ -1,24 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Bril 
+module Bril
   ( formBlocks
   , cfg
   , optimize
   ) where
 
-import Data.Foldable as F
-import Program (Program(..))
-import Instr (Instr(..), terminator)
-import Fn (Fn(..))
-import Block
-  ( Block(..)
-  , instrs
-  , appendInstr
-  , named
-  , indexed
-  , hasTerminator
-  )
+import           Block         (Block (..), appendInstr, hasTerminator, indexed,
+                                instrs, named)
 import qualified CFG
+import           Data.Foldable as F
+import           Fn            (Fn (..))
+import           Instr         (Instr (..), terminator)
 import qualified Optimizer
+import           Program       (Program (..))
 
 -- When processing multiple functions
 -- extend the CFG to be named, 1 per function
@@ -41,7 +35,7 @@ formBlock :: [Block] -> (Int, Instr) -> [Block]
 formBlock blocks@(current:rest) (idx, instr) =
   case instr of
     Label name -> named name:blocks
-    _ -> 
+    _ ->
       if hasTerminator current
          then appendInstr (indexed idx) instr:blocks
          else appendInstr current instr:rest
@@ -55,4 +49,4 @@ optimize p [] = p
 optimize (Program ((Fn i d t ins): _)) _ = Program [Fn i d t instrs']
   where
     instrs' = concatMap (\(Block _ i) -> i) optimized
-    optimized = Optimizer.dce $ formBlocks ins
+    optimized = Optimizer.dcePass $ formBlocks ins

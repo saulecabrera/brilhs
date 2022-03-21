@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Fn 
+module Fn
   ( Fn(..)
   , void
   )
-  where 
+  where
 
-import Instr (Instr)
-import Id (Ident, Dest, OptionalType)
-import Data.Aeson
+import           Data.Aeson
+import           Id         (Dest, Ident, OptionalType)
+import           Instr      (Instr)
 
 data Fn = Fn Ident [Dest] OptionalType [Instr] deriving (Show, Eq)
 
