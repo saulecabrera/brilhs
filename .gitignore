@@ -4,3 +4,5 @@
 .idea
 *.iml
 test/integration/cfg/*.json
+test/integration/tdce/*.json
+

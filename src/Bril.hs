@@ -5,8 +5,8 @@ module Bril
   , optimize
   ) where
 
-import           Block         (Block (..), appendInstr, hasTerminator, indexed,
-                                instrs, named)
+import           Block         (Block (..), appendInstr, hasOriginalLabel,
+                                hasTerminator, indexed, instrs, named)
 import qualified CFG
 import           Data.Foldable as F
 import           Fn            (Fn (..))
@@ -48,5 +48,5 @@ optimize (Program []) _ = Program []
 optimize p [] = p
 optimize (Program ((Fn i d t ins): _)) _ = Program [Fn i d t instrs']
   where
-    instrs' = concatMap (\(Block _ i) -> i) optimized
     optimized = Optimizer.dcePass $ formBlocks ins
+    instrs' = concatMap (\b@(Block name i) -> if hasOriginalLabel b then Label name : i else i) optimized

@@ -7,6 +7,7 @@ module Block
   , indexed
   , hasTerminator
   , size
+  , hasOriginalLabel
   )
   where
 
@@ -37,3 +38,5 @@ hasTerminator (Block _ ins) = terminator $ Prelude.last ins
 
 size :: Block -> Int
 size (Block _ ins) = Prelude.length ins
+
+hasOriginalLabel (Block n _) = not $ "block_" `isPrefixOf` n
