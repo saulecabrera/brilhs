@@ -19,7 +19,13 @@ instance FromJSON Fn where
        <*> o .: "instrs"
 
 instance ToJSON Fn where
-  toJSON (Fn name args ty instrs) =
+  toJSON (Fn name args Nothing instrs) =
+    object [ "name" .= name
+           , "args" .= args
+           , "instrs" .= instrs
+           ]
+
+  toJSON (Fn name args (Just ty) instrs) =
     object [ "name" .= name
            , "args" .= args
            , "instrs" .= instrs

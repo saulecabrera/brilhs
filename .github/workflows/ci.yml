@@ -50,4 +50,7 @@ jobs:
           cd test/integration/cfg
           turnt *.bril
 
+          cd ../tdce
+          turnt *.bril
+
 
