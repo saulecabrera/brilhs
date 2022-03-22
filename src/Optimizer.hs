@@ -21,6 +21,7 @@ data DefState = DefState { defs       :: M.HashMap Text Int
 
 data Passes = DCE deriving (Show, Read)
 
+
 dcePass :: [Block] -> [Block]
 dcePass = dcePlus . dce
 
@@ -31,13 +32,15 @@ dce blocks = let result = dce' blocks
                   else map snd result
 
 dce' :: [Block] -> [(Bool, Block)]
-dce' blocks = map (optimize $ usages blocks) blocks
+dce' blocks = map (f blocks) blocks
+  where
+    f = optimize . usages
 
 usages :: [Block] -> [Arg]
 usages = concatMap usage
 
 usage :: Block -> [Arg]
-usage b = concatMap args (instrs b)
+usage = concatMap args . instrs
 
 optimize :: [Arg] -> Block -> (Bool, Block)
 optimize usages b@(Block name ins) = (changed, block)
@@ -51,31 +54,41 @@ optimize usages b@(Block name ins) = (changed, block)
     changed = Block.size b /= Block.size block
 
 
+enumerate :: [b] -> [(Int, b)]
+enumerate = zip [0..]
+
+initState :: DefState
+initState = DefState { defs = M.empty
+                     , candidates = []
+                     }
 
 dcePlus :: [Block] -> [Block]
-dcePlus blocks = let result = map (\b -> evalState (dcePlus' b) DefState { defs = M.empty, candidates = [] }) blocks
-                  in if any ((== True) . fst) result
-                        then dcePlus (map snd result)
-                        else map snd result
+dcePlus blocks = let result = map (\b -> evalState (dcePlus' b) initState) blocks
+                     blocks' = map snd result
+                     changes = map fst result
+                  in if or changes
+                        then dcePlus blocks'
+                        else blocks'
 
 dcePlus' :: Block -> S (Bool, Block)
-dcePlus' b@(Block name ins) = traverse_ handleInstr (zip [0..] ins) *> gets candidates >>= removeCandidates
+dcePlus' b@(Block name ins) = traverse_ handleInstr (enumerate ins) *> gets candidates >>= remove
   where
-    removeCandidates :: [Int] -> S (Bool, Block)
-    removeCandidates candidates = let block = filter (\(index, _) -> index `notElem` candidates) (zip [0..] ins)
-                                      changed = Block.size b /= length block
-                                   in return (changed, Block name (map snd block))
+    remove :: [Int] -> S (Bool, Block)
+    remove candidates = let blockInfo = filter ((`notElem` candidates) . fst) (enumerate ins)
+                            block = Block name (map snd blockInfo)
+                            changed = Block.size b /= Block.size block
+                         in return (changed, block)
 
 handleInstr :: (Int, Instr) -> S ()
-handleInstr (index, instr) = traverse_ handleArg (args instr) *> findCandidates (dest instr) index
+handleInstr (index, instr) = traverse_ arg' (args instr) *> candidates' (dest instr) index
   where
-    handleArg :: Arg -> S ()
-    handleArg arg = modify $ \s -> DefState { defs = M.delete arg (defs s)
-                                            , candidates = candidates s
-                                            }
-    findCandidates :: Maybe Dest -> Int -> S ()
-    findCandidates Nothing _ = pure ()
-    findCandidates (Just (Dest _ id)) index = modify' $ \s -> DefState { defs = M.insert id index (defs s)
+    arg' :: Arg -> S ()
+    arg' arg = modify $ \s -> DefState { defs = M.delete arg (defs s) -- `delete` will only have an effect if the definition exists
+                                       , candidates = candidates s
+                                       }
+    candidates' :: Maybe Dest -> Int -> S ()
+    candidates' Nothing _ = pure ()
+    candidates' (Just (Dest _ id)) index = modify' $ \s -> DefState { defs = M.insert id index (defs s)
                                                                      , candidates = if id `M.member` defs s
                                                                                      then (defs s M.! id) : candidates s
                                                                                      else candidates s
