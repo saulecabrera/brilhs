@@ -17,7 +17,6 @@ import           Data.Foldable       as F
 import           Data.Text
 import           Id                  (Arg, Dest (..), Ident, Literal,
                                       optionalDest)
-
 data Instr = Label Text
            | Const Dest Literal
            | Binary Dest BinaryOperation Arg Arg
@@ -88,10 +87,11 @@ dest _                = Nothing
 
 
 instance FromJSON Instr where
-  parseJSON = withObject "instr" $ \o -> F.asum [
-                                                Label <$> o .: "label"
-                                              , parseOp o
-                                              ]
+  parseJSON = withObject "instr" $ \o -> do
+    label <- o .:? "label"
+    case label of
+      Just l -> return $ Label l
+      _      -> parseOp o
 
 instance ToJSON Instr where
   toJSON (Label s) = object ["label" .= s]
@@ -224,4 +224,5 @@ args (Free a)         = [a]
 args (Guard a _)      = [a]
 args (Phi _ _ as)     = as
 args (Print as)       = as
+args (Br a _ _)       = [a]
 args _                = []
